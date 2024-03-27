@@ -228,6 +228,8 @@ std::string NameOfPlanNodeType(const PlanType &type) {
             return "kPlanTypeCreateUser";
         case kPlanTypeAlterUser:
             return "kPlanTypeAlterUser";
+        case kPlanTypeInstanceFormat:
+            return "kPlanTypeInstanceFormat";
         case kUnknowPlan:
             return std::string("kUnknow");
     }

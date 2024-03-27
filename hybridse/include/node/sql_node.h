@@ -2996,6 +2996,7 @@ bool WindowOfExpression(const std::map<std::string, const WindowDefNode *>& wind
                         const WindowDefNode **output);
 
 bool IsAggregationExpression(const udf::UdfLibrary* lib, const node::ExprNode* node_ptr);
+bool IsFeatureSignatureExpression(const udf::UdfLibrary* lib, const node::ExprNode* node_ptr);
 void ColumnOfExpression(const ExprNode *node_ptr,
                         std::vector<const node::ExprNode *> *columns);  // NOLINT
 void FillSqlNodeList2NodeVector(SqlNodeList *node_list_ptr,

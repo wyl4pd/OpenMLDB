@@ -348,6 +348,8 @@ class NodeManager {
 
     PlanNode *MakeSortPlanNode(PlanNode *node, const OrderByNode *order_list);
 
+    PlanNode *MakeInstanceFormatPlanNode(PlanNode *node);
+
     PlanNode *MakeDistinctPlanNode(PlanNode *node);
 
     node::ExprNode *MakeAndExpr(ExprListNode *expr_list);

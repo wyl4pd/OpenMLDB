@@ -174,6 +174,8 @@ class BatchModeTransformer {
                                    PhysicalOpNode** output);
     virtual Status TransformRenameOp(const node::RenamePlanNode* node,
                                      PhysicalOpNode** output);
+    virtual Status TransformInstanceFormatOp(const node::InstanceFormatPlanNode* node,
+                                             PhysicalOpNode** output);
     virtual Status TransformDistinctOp(const node::DistinctPlanNode* node,
                                        PhysicalOpNode** output);
     virtual Status TransformDeleteOp(const node::DeletePlanNode* node, PhysicalOpNode** output);

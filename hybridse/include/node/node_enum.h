@@ -194,6 +194,11 @@ enum DataType {
     kNull = 101,
     kPlaceholder = 102
 };
+enum FeatureSignatureType {
+    kFeatureSignatureLabel = 0,
+    kFeatureSignatureNumeric = 1,
+    kFeatureSignatureCategory,
+};
 
 enum TimeUnit {
     kTimeUnitYear,
@@ -325,6 +330,7 @@ enum PlanType {
     kPlanTypeSetOperation,
     kPlanTypeSort,
     kPlanTypeGroup,
+    kPlanTypeInstanceFormat,
     kPlanTypeDistinct,
     kPlanTypeProject,
     kPlanTypeRename,

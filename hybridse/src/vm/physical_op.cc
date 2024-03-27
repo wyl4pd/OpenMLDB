@@ -976,6 +976,24 @@ void PhysicalSortNode::Print(std::ostream& output, const std::string& tab) const
     PrintChildren(output, tab);
 }
 
+Status PhysicalInstanceFormatNode::InitSchema(PhysicalPlanContext* ctx) {
+    schemas_ctx_.Clear();
+    schemas_ctx_.SetDefaultDBName(ctx->db());
+    instance_schema_.Clear();
+    type::ColumnDef* column = instance_schema_.Add();
+    column->set_type(type::kVarchar);
+    column->set_name("instance");
+    schemas_ctx_.AddSource()->SetSchema(&instance_schema_);
+    return Status::OK();
+}
+
+Status PhysicalInstanceFormatNode::WithNewChildren(node::NodeManager* nm, const std::vector<PhysicalOpNode*>& children,
+                                                   PhysicalOpNode** out) {
+    CHECK_TRUE(children.size() == 1, common::kPlanError);
+    *out = nm->RegisterNode(new PhysicalInstanceFormatNode(children[0]));
+    return Status::OK();
+}
+
 Status PhysicalDistinctNode::WithNewChildren(node::NodeManager* nm, const std::vector<PhysicalOpNode*>& children,
                                              PhysicalOpNode** out) {
     CHECK_TRUE(children.size() == 1, common::kPlanError);

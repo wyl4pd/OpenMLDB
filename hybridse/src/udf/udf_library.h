@@ -106,6 +106,8 @@ class UdfLibrary {
     bool IsUdaf(const std::string& name) const;
     void SetIsUdaf(const std::string& name, size_t args);
 
+    bool IsFeatureSignature(const std::string& name) const;
+
     bool RequireListAt(const std::string& name, size_t index) const;
     bool IsListReturn(const std::string& name) const;
 
@@ -123,6 +125,7 @@ class UdfLibrary {
     UdafRegistryHelper RegisterUdaf(const std::string& name);
 
     Status RegisterAlias(const std::string& alias, const std::string& name);
+    Status RegisterFeatureSignature(const std::string& name, node::FeatureSignatureType signature);
     Status RegisterFromFile(const std::string& path);
 
     template <template <typename> class FTemplate>
@@ -170,6 +173,8 @@ class UdfLibrary {
 
     // external symbols
     std::unordered_map<std::string, void*> external_symbols_;
+
+    std::unordered_map<std::string, node::FeatureSignatureType> feature_signature_symbols_;
 
     node::NodeManager nm_;
 

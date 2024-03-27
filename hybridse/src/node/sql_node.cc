@@ -1312,6 +1312,17 @@ bool IsAggregationExpression(const udf::UdfLibrary *lib, const ExprNode *node_pt
     return false;
 }
 
+// Check if given expression is an feature signature expression.
+bool IsFeatureSignatureExpression(const udf::UdfLibrary *lib, const ExprNode *node_ptr) {
+    if (kExprCall == node_ptr->GetExprType()) {
+        const CallExprNode *func_node_ptr = dynamic_cast<const CallExprNode *>(node_ptr);
+        if (lib->IsFeatureSignature(func_node_ptr->GetFnDef()->GetName())) {
+            return true;
+        }
+    }
+    return false;
+}
+
 bool WindowOfExpression(const std::map<std::string, const WindowDefNode *> &windows, ExprNode *node_ptr,
                         const WindowDefNode **output) {
     // try to resolved window ptr from expression like: call(args...) over window

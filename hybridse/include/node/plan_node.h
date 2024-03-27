@@ -134,6 +134,10 @@ class TablePlanNode : public LeafPlanNode {
     const std::string table_;
 };
 
+class InstanceFormatPlanNode : public UnaryPlanNode {
+ public:
+    explicit InstanceFormatPlanNode(PlanNode *node): UnaryPlanNode(node, kPlanTypeInstanceFormat) {}
+};
 class DistinctPlanNode : public UnaryPlanNode {
  public:
     explicit DistinctPlanNode(PlanNode *node) : UnaryPlanNode(node, kPlanTypeDistinct) {}

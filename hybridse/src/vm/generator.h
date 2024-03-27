@@ -83,6 +83,7 @@ class ConstProjectGenerator : public FnGenerator {
     const Row Gen(const Row& parameter);
     RowProjectFun fun_;
 };
+
 class AggGenerator : public FnGenerator, public std::enable_shared_from_this<AggGenerator> {
  public:
     [[nodiscard]] static std::shared_ptr<AggGenerator> Create(const FnInfo& info) {

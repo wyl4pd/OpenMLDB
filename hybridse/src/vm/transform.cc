@@ -163,6 +163,12 @@ Status BatchModeTransformer::TransformPlanOp(const node::PlanNode* node, Physica
                 &op));
             break;
         }
+        case node::kPlanTypeInstanceFormat: {
+            CHECK_STATUS(TransformInstanceFormatOp(
+                dynamic_cast<const ::hybridse::node::InstanceFormatPlanNode*>(node),
+                &op));
+            break;
+        }
         case node::kPlanTypeDistinct: {
             CHECK_STATUS(TransformDistinctOp(
                 dynamic_cast<const ::hybridse::node::DistinctPlanNode*>(node),
@@ -1095,6 +1101,19 @@ Status BatchModeTransformer::TransformRenameOp(const node::RenamePlanNode* node,
     CHECK_STATUS(
         CreateOp<PhysicalRenameNode>(&rename_op, depend, node->table_));
     *output = rename_op;
+    return Status::OK();
+}
+
+Status BatchModeTransformer::TransformInstanceFormatOp(
+    const node::InstanceFormatPlanNode* node, PhysicalOpNode** output) {
+    CHECK_TRUE(node != nullptr && output != nullptr, kPlanError,
+               "Input node or output node is null");
+    PhysicalOpNode* depend = nullptr;
+    CHECK_STATUS(TransformPlanOp(node->GetChildren()[0], &depend));
+
+    PhysicalInstanceFormatNode* instance_format = nullptr;
+    CHECK_STATUS(CreateOp<PhysicalInstanceFormatNode>(&instance_format, depend));
+    *output = instance_format;
     return Status::OK();
 }
 

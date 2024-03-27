@@ -45,6 +45,7 @@ enum PhysicalOpType {
     kPhysicalOpConstProject,
     kPhysicalOpLimit,
     kPhysicalOpRename,
+    kPhysicalOpInstanceFormat,
     kPhysicalOpDistinct,
     kPhysicalOpJoin,
     kPhysicalOpSetOperation,
@@ -67,6 +68,8 @@ enum PhysicalOpType {
 
 enum PhysicalSchemaType { kSchemaTypeTable, kSchemaTypeRow, kSchemaTypeGroup };
 absl::string_view PhysicalOpTypeName(PhysicalOpType type);
+
+typedef Row (*InstanceFormatFun)(const Row&, Schema, const std::vector<node::FeatureSignatureType>&);
 
 /**
  * Function codegen information for physical node. It should
@@ -721,7 +724,6 @@ class PhysicalProjectNode : public PhysicalUnaryNode {
     static PhysicalProjectNode *CastFrom(PhysicalOpNode *node);
 
     base::Status InitSchema(PhysicalPlanContext *) override;
-
     base::Status WithNewChildren(node::NodeManager *nm,
                                  const std::vector<PhysicalOpNode *> &children,
                                  PhysicalOpNode **out) override;
@@ -1794,13 +1796,31 @@ class PhysicalRenameNode : public PhysicalUnaryNode {
     const std::string name_;
 };
 
+class PhysicalInstanceFormatNode : public PhysicalUnaryNode {
+ public:
+    explicit PhysicalInstanceFormatNode(PhysicalOpNode *node)
+        : PhysicalUnaryNode(node, kPhysicalOpInstanceFormat, true) {
+        output_type_ = node->GetOutputType();
+    }
+
+    base::Status InitSchema(PhysicalPlanContext *) override;
+    base::Status WithNewChildren(node::NodeManager *nm,
+                                 const std::vector<PhysicalOpNode *> &children,
+                                 PhysicalOpNode **out) override;
+
+    virtual ~PhysicalInstanceFormatNode() {}
+ private:
+    Schema instance_schema_;
+    InstanceFormatFun instance_format_fun_;
+    std::vector<node::FeatureSignatureType> featuer_signatures_;
+};
+
 class PhysicalDistinctNode : public PhysicalUnaryNode {
  public:
     explicit PhysicalDistinctNode(PhysicalOpNode *node)
         : PhysicalUnaryNode(node, kPhysicalOpDistinct, true) {
         output_type_ = node->GetOutputType();
     }
-
     base::Status WithNewChildren(node::NodeManager *nm,
                                  const std::vector<PhysicalOpNode *> &children,
                                  PhysicalOpNode **out) override;

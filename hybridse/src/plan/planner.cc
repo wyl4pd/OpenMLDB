@@ -180,6 +180,7 @@ base::Status Planner::CreateSelectQueryPlan(const node::SelectQueryNode *root, n
     node::ProjectListNode *table_project_list = node_manager_->MakeProjectListPlanNode(nullptr, false);
     const udf::UdfLibrary *lib = udf::DefaultUdfLibrary::get();
 
+    size_t feature_signature_count = 0;
     const node::NodePointVector &select_expr_list = root->GetSelectList()->GetList();
     for (uint32_t pos = 0u; pos < select_expr_list.size(); pos++) {
         auto& expr = select_expr_list[pos];
@@ -221,6 +222,9 @@ base::Status Planner::CreateSelectQueryPlan(const node::SelectQueryNode *root, n
 
         // deal with row project / table aggregation project
         if (w_ptr == nullptr) {
+            if (node::IsFeatureSignatureExpression(lib, project_expr)) {
+                feature_signature_count += 1;
+            }
             if (node::IsAggregationExpression(lib, project_expr)) {
                 // table aggregation project
                 table_project_list->AddProject(
@@ -242,6 +246,9 @@ base::Status Planner::CreateSelectQueryPlan(const node::SelectQueryNode *root, n
             auto res = window_project_list_map.emplace(w_ptr, node_manager_->MakeProjectListPlanNode(w_node_ptr, true));
             it = res.first;
         }
+        if (node::IsFeatureSignatureExpression(lib, project_expr)) {
+            feature_signature_count += 1;
+        }
         it->second->AddProject(
             node_manager_->MakeAggProjectNode(pos, project_name, project_expr, w_ptr->GetFrame()));
     }
@@ -255,6 +262,23 @@ base::Status Planner::CreateSelectQueryPlan(const node::SelectQueryNode *root, n
     // Rule 3: Can't support table aggregation and window aggregation simultaneously
     CHECK_TRUE(!(table_project_list->HasAggProject() && !window_project_list_map.empty()), common::kPlanError,
                "Can't support table aggregation and window aggregation simultaneously")
+    if (feature_signature_count) {
+        // Can't support group clause and feature signature simultaneously
+        CHECK_TRUE(nullptr == root->group_clause_ptr_, common::kPlanError,
+                    "Can't support group clause and feature signature simultaneously")
+        // Can't support having clause and feature signature simultaneously
+        CHECK_TRUE(nullptr == root->having_clause_ptr_, common::kPlanError,
+                    "Can't support having clause and feature signature simultaneously")
+        // Can't support table aggregation and feature signature simultaneously
+        CHECK_TRUE(table_project_list->HasAggProject(), common::kPlanError,
+                    "Can't support table aggregation and feature signature simultaneously")
+        // Can't support window aggregation and feature signature simultaneously
+        CHECK_TRUE(window_project_list_map.empty(), common::kPlanError,
+                    "Can't support window aggregation and feature signature simultaneously")
+        // All columns should apply feature signature
+        CHECK_TRUE(feature_signature_count == select_expr_list.size(), common::kPlanError,
+                   "Some columns miss feature signatures");
+    }
 
     // Add table projects into project map beforehand
     // Thus we can merge project list based on window frame when it is necessary.
@@ -326,7 +350,10 @@ base::Status Planner::CreateSelectQueryPlan(const node::SelectQueryNode *root, n
 
     current_node = node_manager_->MakeNode<node::ProjectPlanNode>(current_node, table_name, project_list_without_null,
                                                                   pos_mapping);
-
+    // feature signature
+    if (feature_signature_count) {
+        current_node = node_manager_->MakeInstanceFormatPlanNode(current_node);
+    }
     // distinct
     if (root->distinct_opt_) {
         current_node = node_manager_->MakeDistinctPlanNode(current_node);
@@ -340,6 +367,7 @@ base::Status Planner::CreateSelectQueryPlan(const node::SelectQueryNode *root, n
         const node::LimitNode *limit_ptr = static_cast<const node::LimitNode *>(root->GetLimit());
         current_node = node_manager_->MakeLimitPlanNode(current_node, limit_ptr->GetLimitCount());
     }
+    
 
     *plan_tree = current_node;
     return base::Status::OK();

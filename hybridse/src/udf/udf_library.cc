@@ -159,6 +159,12 @@ void UdfLibrary::SetIsUdaf(const std::string& name, size_t args) {
     iter->second->udaf_arg_nums.insert(args);
 }
 
+bool UdfLibrary::IsFeatureSignature(const std::string& name) const {
+    std::string canonical_name = GetCanonicalName(name);
+    std::lock_guard<std::mutex> lock(mu_);
+    return feature_signature_symbols_.count(canonical_name);
+}
+
 bool UdfLibrary::RequireListAt(const std::string& name, size_t index) const {
     std::string canonical_name = GetCanonicalName(name);
     std::lock_guard<std::mutex> lock(mu_);
@@ -298,6 +304,17 @@ Status UdfLibrary::RegisterAlias(const std::string& alias,
     iter->second->alias.insert(canonical_name);
 
     table_[canonical_alias] = iter->second;
+    return Status::OK();
+}
+
+Status UdfLibrary::RegisterFeatureSignature(const std::string& name, node::FeatureSignatureType signature) {
+    std::string canonical_name = GetCanonicalName(name);
+    std::lock_guard<std::mutex> lock(mu_);
+    CHECK_TRUE(table_.count(canonical_name), kCodegenError,
+               "Feature signature target function '", canonical_name, "' not found");
+    CHECK_TRUE(!feature_signature_symbols_.count(canonical_name), kCodegenError,
+               "Feature signature name '", canonical_name, "' is duplicated");
+    feature_signature_symbols_.emplace(canonical_name, signature);
     return Status::OK();
 }
 
