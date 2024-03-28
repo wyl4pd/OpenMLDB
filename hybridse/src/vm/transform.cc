@@ -1111,9 +1111,10 @@ Status BatchModeTransformer::TransformInstanceFormatOp(
     PhysicalOpNode* depend = nullptr;
     CHECK_STATUS(TransformPlanOp(node->GetChildren()[0], &depend));
 
-    PhysicalInstanceFormatNode* instance_format = nullptr;
-    CHECK_STATUS(CreateOp<PhysicalInstanceFormatNode>(&instance_format, depend));
-    *output = instance_format;
+    PhysicalInstanceFormatNode* instance_format_op = nullptr;
+    CHECK_STATUS(CreateOp<PhysicalInstanceFormatNode>(&instance_format_op,
+        depend, node->format_fn_name_, node->feature_signature_list_));
+    *output = instance_format_op;
     return Status::OK();
 }
 

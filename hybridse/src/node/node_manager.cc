@@ -924,8 +924,10 @@ PlanNode *NodeManager::MakeSortPlanNode(PlanNode *node, const OrderByNode *order
     node::SortPlanNode *node_ptr = new SortPlanNode(node, order_list);
     return RegisterNode(node_ptr);
 }
-PlanNode *NodeManager::MakeInstanceFormatPlanNode(PlanNode *node) {
-    node::InstanceFormatPlanNode *node_ptr = new InstanceFormatPlanNode(node);
+PlanNode *NodeManager::MakeInstanceFormatPlanNode(PlanNode *node, const std::string& instance_format,
+    const FeatureSignatureList& feature_signature_list) {
+    node::InstanceFormatPlanNode *node_ptr = new InstanceFormatPlanNode(
+        node, instance_format, feature_signature_list);
     return RegisterNode(node_ptr);
 }
 PlanNode *NodeManager::MakeDistinctPlanNode(PlanNode *node) {

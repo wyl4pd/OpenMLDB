@@ -240,6 +240,19 @@ ClusterTask RunnerBuilder::Build(PhysicalOpNode* node, Status& status) {
                 }
             }
         }
+        case kPhysicalOpInstanceFormat: {
+            auto producer_task = Build(node->GetProducer(0), status);
+            if (!producer_task.IsValid()) {
+                status.msg = "fail to build input runner";
+                status.code = common::kExecutionPlanError;
+                LOG(WARNING) << status;
+                return fail;
+            }
+            auto op = dynamic_cast<const PhysicalInstanceFormatNode*>(node);
+            InstanceFormatRunner* runner = CreateRunner<InstanceFormatRunner>(
+                id_++, node->schemas_ctx(), op->GetLimitCnt(), op->instance_format_);
+            return RegisterTask(node, UnaryInheritTask(producer_task, runner));
+        }
         case kPhysicalOpRequestUnion: {
             auto left_task = Build(node->producers().at(0), status);
             if (!left_task.IsValid()) {

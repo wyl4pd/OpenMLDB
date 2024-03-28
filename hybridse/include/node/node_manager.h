@@ -348,7 +348,8 @@ class NodeManager {
 
     PlanNode *MakeSortPlanNode(PlanNode *node, const OrderByNode *order_list);
 
-    PlanNode *MakeInstanceFormatPlanNode(PlanNode *node);
+    PlanNode *MakeInstanceFormatPlanNode(PlanNode *node, const std::string& instance_format,
+        const FeatureSignatureList& feature_signature_list);
 
     PlanNode *MakeDistinctPlanNode(PlanNode *node);
 

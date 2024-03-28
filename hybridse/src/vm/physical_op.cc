@@ -979,18 +979,23 @@ void PhysicalSortNode::Print(std::ostream& output, const std::string& tab) const
 Status PhysicalInstanceFormatNode::InitSchema(PhysicalPlanContext* ctx) {
     schemas_ctx_.Clear();
     schemas_ctx_.SetDefaultDBName(ctx->db());
-    instance_schema_.Clear();
-    type::ColumnDef* column = instance_schema_.Add();
-    column->set_type(type::kVarchar);
-    column->set_name("instance");
-    schemas_ctx_.AddSource()->SetSchema(&instance_schema_);
+    InstanceFormatFnPtr format_fn_ptr = nullptr;
+    CHECK_STATUS(ctx->library()->ResolveInstanceFormat(instance_format_.format_fn_name(), &format_fn_ptr));
+    const vm::Schema* format_fn_schema = GetProducer(0)->schemas_ctx()->GetOutputSchema();
+    instance_format_.InitFormatFn(format_fn_ptr, *format_fn_schema);
+
+    SchemaSource* schema_source = schemas_ctx_.AddSource();
+    schema_source->SetSchema(instance_format_.format_fn_schema());
+    schema_source->SetColumnID(0, ctx->GetNewColumnID());
+    schema_source->SetNonSource(0);
     return Status::OK();
 }
 
 Status PhysicalInstanceFormatNode::WithNewChildren(node::NodeManager* nm, const std::vector<PhysicalOpNode*>& children,
                                                    PhysicalOpNode** out) {
     CHECK_TRUE(children.size() == 1, common::kPlanError);
-    *out = nm->RegisterNode(new PhysicalInstanceFormatNode(children[0]));
+    *out = nm->RegisterNode(new PhysicalInstanceFormatNode(children[0],
+        instance_format_.format_fn_name(), instance_format_.feature_signature_list()));
     return Status::OK();
 }
 

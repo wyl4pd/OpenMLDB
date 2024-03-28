@@ -577,6 +577,41 @@ std::shared_ptr<DataHandler> SimpleProjectRunner::Run(
     return std::shared_ptr<DataHandler>();
 }
 
+std::shared_ptr<DataHandler> InstanceFormatRunner::Run(
+    RunnerContext& ctx,
+    const std::vector<std::shared_ptr<DataHandler>>& inputs) {
+    if (inputs.size() < 1u) {
+        LOG(WARNING) << "inputs size < 1";
+        return std::shared_ptr<DataHandler>();
+    }
+
+    auto& parameter = ctx.GetParameterRow();
+    auto input = inputs[0];
+    switch (input->GetHandlerType()) {
+        case kTableHandler: {
+            return std::shared_ptr<TableHandler>(new TableProjectWrapper(
+                std::dynamic_pointer_cast<TableHandler>(input),
+                parameter, &instance_format_));
+        }
+        case kPartitionHandler: {
+            return std::shared_ptr<TableHandler>(new PartitionProjectWrapper(
+                std::dynamic_pointer_cast<PartitionHandler>(input),
+                parameter, &instance_format_));
+        }
+        case kRowHandler: {
+            return std::shared_ptr<RowHandler>(new RowProjectWrapper(
+                std::dynamic_pointer_cast<RowHandler>(input),
+                parameter, &instance_format_));
+        }
+        default: {
+            LOG(WARNING) << "Fail run instance format, invalid handler type "
+                         << input->GetHandlerTypeName();
+        }
+    }
+
+    return std::shared_ptr<DataHandler>();
+}
+
 Row SelectSliceRunner::GetSliceFn::operator()(const Row& row, const Row& parameter) const {
     if (slice_ < static_cast<size_t>(row.GetRowPtrCnt())) {
         return Row(row.GetSlice(slice_));

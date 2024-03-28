@@ -180,7 +180,7 @@ base::Status Planner::CreateSelectQueryPlan(const node::SelectQueryNode *root, n
     node::ProjectListNode *table_project_list = node_manager_->MakeProjectListPlanNode(nullptr, false);
     const udf::UdfLibrary *lib = udf::DefaultUdfLibrary::get();
 
-    size_t feature_signature_count = 0;
+    node::FeatureSignatureList feature_signature_list;
     const node::NodePointVector &select_expr_list = root->GetSelectList()->GetList();
     for (uint32_t pos = 0u; pos < select_expr_list.size(); pos++) {
         auto& expr = select_expr_list[pos];
@@ -223,7 +223,9 @@ base::Status Planner::CreateSelectQueryPlan(const node::SelectQueryNode *root, n
         // deal with row project / table aggregation project
         if (w_ptr == nullptr) {
             if (node::IsFeatureSignatureExpression(lib, project_expr)) {
-                feature_signature_count += 1;
+                node::FeatureSignatureType feature_signature;
+                CHECK_STATUS(node::ResolveFeatureSignatureExpression(lib, project_expr, &feature_signature));
+                feature_signature_list.push_back(feature_signature);
             }
             if (node::IsAggregationExpression(lib, project_expr)) {
                 // table aggregation project
@@ -247,7 +249,9 @@ base::Status Planner::CreateSelectQueryPlan(const node::SelectQueryNode *root, n
             it = res.first;
         }
         if (node::IsFeatureSignatureExpression(lib, project_expr)) {
-            feature_signature_count += 1;
+            node::FeatureSignatureType feature_signature;
+            CHECK_STATUS(node::ResolveFeatureSignatureExpression(lib, project_expr, &feature_signature));
+            feature_signature_list.push_back(feature_signature);
         }
         it->second->AddProject(
             node_manager_->MakeAggProjectNode(pos, project_name, project_expr, w_ptr->GetFrame()));
@@ -262,7 +266,7 @@ base::Status Planner::CreateSelectQueryPlan(const node::SelectQueryNode *root, n
     // Rule 3: Can't support table aggregation and window aggregation simultaneously
     CHECK_TRUE(!(table_project_list->HasAggProject() && !window_project_list_map.empty()), common::kPlanError,
                "Can't support table aggregation and window aggregation simultaneously")
-    if (feature_signature_count) {
+    if (feature_signature_list.size()) {
         // Can't support group clause and feature signature simultaneously
         CHECK_TRUE(nullptr == root->group_clause_ptr_, common::kPlanError,
                     "Can't support group clause and feature signature simultaneously")
@@ -276,7 +280,7 @@ base::Status Planner::CreateSelectQueryPlan(const node::SelectQueryNode *root, n
         CHECK_TRUE(window_project_list_map.empty(), common::kPlanError,
                     "Can't support window aggregation and feature signature simultaneously")
         // All columns should apply feature signature
-        CHECK_TRUE(feature_signature_count == select_expr_list.size(), common::kPlanError,
+        CHECK_TRUE(feature_signature_list.size() == select_expr_list.size(), common::kPlanError,
                    "Some columns miss feature signatures");
     }
 
@@ -351,8 +355,8 @@ base::Status Planner::CreateSelectQueryPlan(const node::SelectQueryNode *root, n
     current_node = node_manager_->MakeNode<node::ProjectPlanNode>(current_node, table_name, project_list_without_null,
                                                                   pos_mapping);
     // feature signature
-    if (feature_signature_count) {
-        current_node = node_manager_->MakeInstanceFormatPlanNode(current_node);
+    if (feature_signature_list.size()) {
+        current_node = node_manager_->MakeInstanceFormatPlanNode(current_node, "gcformat", feature_signature_list);
     }
     // distinct
     if (root->distinct_opt_) {

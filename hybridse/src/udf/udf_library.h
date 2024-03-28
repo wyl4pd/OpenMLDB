@@ -94,6 +94,10 @@ class UdfLibrary {
                            node::NodeManager* node_manager,
                            node::FnDefNode** result) const;
 
+    Status ResolveFeatureSignature(const std::string& name, node::FeatureSignatureType* result) const;
+
+    Status ResolveInstanceFormat(const std::string& name, vm::InstanceFormatFnPtr* instance_format) const;
+
     std::shared_ptr<UdfRegistry> Find(
         const std::string& name,
         const std::vector<const node::TypeNode*>& arg_types) const;
@@ -125,7 +129,8 @@ class UdfLibrary {
     UdafRegistryHelper RegisterUdaf(const std::string& name);
 
     Status RegisterAlias(const std::string& alias, const std::string& name);
-    Status RegisterFeatureSignature(const std::string& name, node::FeatureSignatureType signature);
+    Status RegisterFeatureSignature(const std::string& name, node::FeatureSignatureType feature_signature);
+    Status RegisterInstanceFormat(const std::string& name, vm::InstanceFormatFnPtr format_fn_ptr);
     Status RegisterFromFile(const std::string& path);
 
     template <template <typename> class FTemplate>
@@ -175,6 +180,8 @@ class UdfLibrary {
     std::unordered_map<std::string, void*> external_symbols_;
 
     std::unordered_map<std::string, node::FeatureSignatureType> feature_signature_symbols_;
+
+    std::unordered_map<std::string, vm::InstanceFormatFnPtr> instance_format_symbols_;
 
     node::NodeManager nm_;
 

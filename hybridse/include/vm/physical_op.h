@@ -69,7 +69,36 @@ enum PhysicalOpType {
 enum PhysicalSchemaType { kSchemaTypeTable, kSchemaTypeRow, kSchemaTypeGroup };
 absl::string_view PhysicalOpTypeName(PhysicalOpType type);
 
-typedef Row (*InstanceFormatFun)(const Row&, Schema, const std::vector<node::FeatureSignatureType>&);
+class InstanceFormatInfo {
+ public:
+    typedef Row (*InstanceFormatFnPtr)(const Row&, const InstanceFormatInfo&);
+    const std::string& format_fn_name() const { return format_fn_name_; }
+    const node::FeatureSignatureList& feature_signature_list() const { return feature_signature_list_; }
+    const vm::Schema *format_fn_schema() const { return &format_fn_schema_; }
+    InstanceFormatFnPtr format_fn_ptr() const { return format_fn_ptr_; }
+    const vm::Schema* format_input_schema() const {
+        return &format_input_schema_;
+    }
+    
+    void InitFormatFn(InstanceFormatFnPtr format_fn_ptr, vm::Schema format_input_schema) {
+        format_fn_schema_.Clear();
+        type::ColumnDef* column = format_fn_schema_.Add();
+        column->set_type(type::kVarchar);
+        column->set_name("instance");
+        format_fn_ptr_ = format_fn_ptr;
+        format_input_schema_ = format_input_schema;
+    }
+    explicit InstanceFormatInfo(const std::string& format_fn_name,
+                                const node::FeatureSignatureList& feature_signature_list)
+        : format_fn_name_(format_fn_name), feature_signature_list_(feature_signature_list) {}
+ private:
+    const std::string format_fn_name_;
+    const node::FeatureSignatureList feature_signature_list_;
+    vm::Schema format_fn_schema_;
+    InstanceFormatFnPtr format_fn_ptr_ = nullptr;
+    vm::Schema format_input_schema_;
+};
+using InstanceFormatFnPtr = InstanceFormatInfo::InstanceFormatFnPtr;
 
 /**
  * Function codegen information for physical node. It should
@@ -1798,8 +1827,10 @@ class PhysicalRenameNode : public PhysicalUnaryNode {
 
 class PhysicalInstanceFormatNode : public PhysicalUnaryNode {
  public:
-    explicit PhysicalInstanceFormatNode(PhysicalOpNode *node)
-        : PhysicalUnaryNode(node, kPhysicalOpInstanceFormat, true) {
+    explicit PhysicalInstanceFormatNode(PhysicalOpNode *node, const std::string& format_fn_name,
+          const node::FeatureSignatureList& feature_signature_list)
+        : PhysicalUnaryNode(node, kPhysicalOpInstanceFormat, true),
+          instance_format_(format_fn_name, feature_signature_list) {
         output_type_ = node->GetOutputType();
     }
 
@@ -1809,10 +1840,7 @@ class PhysicalInstanceFormatNode : public PhysicalUnaryNode {
                                  PhysicalOpNode **out) override;
 
     virtual ~PhysicalInstanceFormatNode() {}
- private:
-    Schema instance_schema_;
-    InstanceFormatFun instance_format_fun_;
-    std::vector<node::FeatureSignatureType> featuer_signatures_;
+    InstanceFormatInfo instance_format_;
 };
 
 class PhysicalDistinctNode : public PhysicalUnaryNode {

@@ -134,9 +134,16 @@ class TablePlanNode : public LeafPlanNode {
     const std::string table_;
 };
 
+
+typedef std::vector<FeatureSignatureType> FeatureSignatureList;
 class InstanceFormatPlanNode : public UnaryPlanNode {
  public:
-    explicit InstanceFormatPlanNode(PlanNode *node): UnaryPlanNode(node, kPlanTypeInstanceFormat) {}
+    explicit InstanceFormatPlanNode(PlanNode *node, const std::string& format_fn_name,
+        const FeatureSignatureList& feature_signature_list)
+        : UnaryPlanNode(node, kPlanTypeInstanceFormat), format_fn_name_(format_fn_name),
+          feature_signature_list_(feature_signature_list) {}
+    const std::string format_fn_name_;
+    const FeatureSignatureList feature_signature_list_;
 };
 class DistinctPlanNode : public UnaryPlanNode {
  public:

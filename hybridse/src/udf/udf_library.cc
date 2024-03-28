@@ -307,14 +307,23 @@ Status UdfLibrary::RegisterAlias(const std::string& alias,
     return Status::OK();
 }
 
-Status UdfLibrary::RegisterFeatureSignature(const std::string& name, node::FeatureSignatureType signature) {
+Status UdfLibrary::RegisterFeatureSignature(const std::string& name, node::FeatureSignatureType feature_signature) {
     std::string canonical_name = GetCanonicalName(name);
     std::lock_guard<std::mutex> lock(mu_);
     CHECK_TRUE(table_.count(canonical_name), kCodegenError,
                "Feature signature target function '", canonical_name, "' not found");
     CHECK_TRUE(!feature_signature_symbols_.count(canonical_name), kCodegenError,
                "Feature signature name '", canonical_name, "' is duplicated");
-    feature_signature_symbols_.emplace(canonical_name, signature);
+    feature_signature_symbols_.emplace(canonical_name, feature_signature);
+    return Status::OK();
+}
+
+Status UdfLibrary::RegisterInstanceFormat(const std::string& name, vm::InstanceFormatFnPtr format_fn_ptr) {
+    std::string canonical_name = GetCanonicalName(name);
+    std::lock_guard<std::mutex> lock(mu_);
+    CHECK_TRUE(!instance_format_symbols_.count(canonical_name), kCodegenError,
+               "Instance format name '", canonical_name, "' is duplicated");
+    instance_format_symbols_.emplace(canonical_name, format_fn_ptr);
     return Status::OK();
 }
 
@@ -438,6 +447,36 @@ Status UdfLibrary::ResolveFunction(const std::string& name,
                                    node::FnDefNode** result) const {
     UdfResolveContext ctx(args, node_manager, this);
     return this->ResolveFunction(name, &ctx, result);
+}
+
+Status UdfLibrary::ResolveFeatureSignature(const std::string& name,
+                                           node::FeatureSignatureType* result) const {
+    CHECK_TRUE(result != nullptr, kCodegenError);
+    *result = node::kFeatureSignatureUnknown;
+    std::string canonical_name = GetCanonicalName(name);
+    std::lock_guard<std::mutex> lock(mu_);
+    auto it = feature_signature_symbols_.find(canonical_name);
+    CHECK_TRUE(
+        it != feature_signature_symbols_.end(), kCodegenError,
+        "Fail to find matching feature signature for ", canonical_name);
+    CHECK_TRUE(result != nullptr, kCodegenError);
+    *result = it->second;
+    return Status::OK();
+}
+
+Status UdfLibrary::ResolveInstanceFormat(const std::string& name,
+                                         vm::InstanceFormatFnPtr* result) const {
+    CHECK_TRUE(result != nullptr, kCodegenError);
+    *result = nullptr;
+    std::string canonical_name = GetCanonicalName(name);
+    std::lock_guard<std::mutex> lock(mu_);
+    auto it = instance_format_symbols_.find(canonical_name);
+    CHECK_TRUE(
+        it != instance_format_symbols_.end(), kCodegenError,
+        "Fail to find matching instance format for ", canonical_name);
+    CHECK_TRUE(result != nullptr, kCodegenError);
+    *result = it->second;
+    return Status::OK();
 }
 
 void UdfLibrary::AddExternalFunction(const std::string& name, void* addr) {

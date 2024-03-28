@@ -68,6 +68,17 @@ class RowProjectFun : public ProjectFun {
     const int8_t* fn_;
 };
 
+class InstanceFormatFun: public ProjectFun {
+ public:
+    explicit InstanceFormatFun(const InstanceFormatInfo& instance_format)
+        : ProjectFun(), instance_format_(instance_format) {}
+    ~InstanceFormatFun() {}
+    Row operator()(const Row& row, const Row& parameter) const override {
+        return instance_format_.format_fn_ptr()(row, instance_format_);
+    }
+    const InstanceFormatInfo instance_format_;
+};
+
 class ProjectGenerator : public FnGenerator {
  public:
     explicit ProjectGenerator(const FnInfo& info) : FnGenerator(info), fun_(info.fn_ptr()) {}

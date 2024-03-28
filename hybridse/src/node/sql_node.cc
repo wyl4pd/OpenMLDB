@@ -1323,6 +1323,14 @@ bool IsFeatureSignatureExpression(const udf::UdfLibrary *lib, const ExprNode *no
     return false;
 }
 
+Status ResolveFeatureSignatureExpression(const udf::UdfLibrary *lib, const ExprNode *node_ptr,
+                                         FeatureSignatureType* result) {
+    CHECK_TRUE(kExprCall == node_ptr->GetExprType(), kTypeError,
+        "expect feature signature but get ", node_ptr->GetExprString());
+    const CallExprNode *func_node_ptr = dynamic_cast<const CallExprNode *>(node_ptr);
+    return lib->ResolveFeatureSignature(func_node_ptr->GetFnDef()->GetName(), result);
+}
+
 bool WindowOfExpression(const std::map<std::string, const WindowDefNode *> &windows, ExprNode *node_ptr,
                         const WindowDefNode **output) {
     // try to resolved window ptr from expression like: call(args...) over window

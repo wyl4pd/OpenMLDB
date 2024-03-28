@@ -198,6 +198,7 @@ enum FeatureSignatureType {
     kFeatureSignatureLabel = 0,
     kFeatureSignatureNumeric = 1,
     kFeatureSignatureCategory,
+    kFeatureSignatureUnknown = 100
 };
 
 enum TimeUnit {

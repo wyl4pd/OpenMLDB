@@ -59,6 +59,7 @@ enum RunnerType {
     kRunnerTableProject,
     kRunnerRowProject,
     kRunnerSimpleProject,
+    kRunnerInstanceFormat,
     kRunnerSelectSlice,
     kRunnerGroupAgg,
     kRunnerAgg,
@@ -393,6 +394,19 @@ class SimpleProjectRunner : public Runner {
         const std::vector<std::shared_ptr<DataHandler>>& inputs)
         override;  // NOLINT
     ProjectGenerator project_gen_;
+};
+
+class InstanceFormatRunner : public Runner {
+ public:
+    InstanceFormatRunner(const int32_t id, const SchemasContext* schema, const std::optional<int32_t> limit_cnt,
+                         const InstanceFormatInfo& instance_format)
+        : Runner(id, kRunnerInstanceFormat, schema, limit_cnt), instance_format_(instance_format) {}
+    ~InstanceFormatRunner() {}
+    std::shared_ptr<DataHandler> Run(
+        RunnerContext& ctx,  // NOLINT
+        const std::vector<std::shared_ptr<DataHandler>>& inputs)
+        override;  // NOLINT
+    const InstanceFormatFun instance_format_;
 };
 
 class SelectSliceRunner : public Runner {
