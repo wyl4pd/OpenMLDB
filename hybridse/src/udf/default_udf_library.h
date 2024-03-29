@@ -48,6 +48,7 @@ class DefaultUdfLibrary : public UdfLibrary {
     void initMaxByCateUdaFs();
     void InitAvgByCateUdafs();
     void InitFeatureZero();
+    void InitFeatureSignature();
 
     // Array Udf defines, udfs either accept array as parameter or returns array
     void InitArrayUdfs();

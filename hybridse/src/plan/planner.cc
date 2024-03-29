@@ -180,6 +180,7 @@ base::Status Planner::CreateSelectQueryPlan(const node::SelectQueryNode *root, n
     node::ProjectListNode *table_project_list = node_manager_->MakeProjectListPlanNode(nullptr, false);
     const udf::UdfLibrary *lib = udf::DefaultUdfLibrary::get();
 
+    bool has_column_alias = false;
     node::FeatureSignatureList feature_signature_list;
     const node::NodePointVector &select_expr_list = root->GetSelectList()->GetList();
     for (uint32_t pos = 0u; pos < select_expr_list.size(); pos++) {
@@ -192,6 +193,8 @@ base::Status Planner::CreateSelectQueryPlan(const node::SelectQueryNode *root, n
                 project_name = target_ptr->GetName();
                 if (project_name.empty()) {
                     project_name = target_ptr->GetVal()->GenerateExpressionName();
+                } else {
+                    has_column_alias = true;
                 }
                 project_expr = target_ptr->GetVal();
                 break;
@@ -267,21 +270,25 @@ base::Status Planner::CreateSelectQueryPlan(const node::SelectQueryNode *root, n
     CHECK_TRUE(!(table_project_list->HasAggProject() && !window_project_list_map.empty()), common::kPlanError,
                "Can't support table aggregation and window aggregation simultaneously")
     if (feature_signature_list.size()) {
-        // Can't support group clause and feature signature simultaneously
-        CHECK_TRUE(nullptr == root->group_clause_ptr_, common::kPlanError,
-                    "Can't support group clause and feature signature simultaneously")
-        // Can't support having clause and feature signature simultaneously
-        CHECK_TRUE(nullptr == root->having_clause_ptr_, common::kPlanError,
-                    "Can't support having clause and feature signature simultaneously")
-        // Can't support table aggregation and feature signature simultaneously
-        CHECK_TRUE(table_project_list->HasAggProject(), common::kPlanError,
-                    "Can't support table aggregation and feature signature simultaneously")
-        // Can't support window aggregation and feature signature simultaneously
-        CHECK_TRUE(window_project_list_map.empty(), common::kPlanError,
-                    "Can't support window aggregation and feature signature simultaneously")
+        // Can't support column alias
+        CHECK_TRUE(!has_column_alias, common::kPlanError,
+                    "Can't support column alias and feature signature simultaneously");
         // All columns should apply feature signature
         CHECK_TRUE(feature_signature_list.size() == select_expr_list.size(), common::kPlanError,
                    "Some columns miss feature signatures");
+        // // Can't support group clause and feature signature simultaneously
+        // CHECK_TRUE(nullptr == root->group_clause_ptr_, common::kPlanError,
+        //             "Can't support group clause and feature signature simultaneously")
+        // // Can't support having clause and feature signature simultaneously
+        // CHECK_TRUE(nullptr == root->having_clause_ptr_, common::kPlanError,
+        //             "Can't support having clause and feature signature simultaneously")
+        // // Can't support table aggregation and feature signature simultaneously
+        // CHECK_TRUE(table_project_list->HasAggProject(), common::kPlanError,
+        //             "Can't support table aggregation and feature signature simultaneously")
+        // // Can't support window aggregation and feature signature simultaneously
+        // CHECK_TRUE(window_project_list_map.empty(), common::kPlanError,
+        //             "Can't support window aggregation and feature signature simultaneously")
+        // 
     }
 
     // Add table projects into project map beforehand
@@ -556,6 +563,7 @@ base::Status Planner::ValidateOnlineServingOp(node::PlanNode *node) {
 
             break;
         }
+        case node::kPlanTypeInstanceFormat:
         case node::kPlanTypeTable:
         case node::kPlanTypeRename:
         case node::kPlanTypeLimit:

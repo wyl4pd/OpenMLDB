@@ -522,6 +522,8 @@ INSTANTIATE_TEST_SUITE_P(EngineConstQuery, EngineTest,
                         testing::ValuesIn(sqlcase::InitCases("cases/query/const_query.yaml")));
 INSTANTIATE_TEST_SUITE_P(EngineUdfQuery, EngineTest,
                         testing::ValuesIn(sqlcase::InitCases("cases/query/udf_query.yaml")));
+INSTANTIATE_TEST_SUITE_P(EngineFeatureSignatureQuery, EngineTest,
+                         testing::ValuesIn(sqlcase::InitCases("cases/query/feature_signature_query.yaml")));
 INSTANTIATE_TEST_SUITE_P(EngineOperatorQuery, EngineTest,
                         testing::ValuesIn(sqlcase::InitCases("cases/query/operator_query.yaml")));
 INSTANTIATE_TEST_SUITE_P(EngineParameterizedQuery, EngineTest,

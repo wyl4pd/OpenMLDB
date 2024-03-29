@@ -85,6 +85,8 @@ class InstanceFormatInfo {
         type::ColumnDef* column = format_fn_schema_.Add();
         column->set_type(type::kVarchar);
         column->set_name("instance");
+        column->set_is_not_null(false);
+        column->mutable_schema()->set_base_type(column->type());
         format_fn_ptr_ = format_fn_ptr;
         format_input_schema_ = format_input_schema;
     }

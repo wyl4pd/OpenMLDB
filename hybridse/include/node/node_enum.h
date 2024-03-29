@@ -196,7 +196,7 @@ enum DataType {
 };
 enum FeatureSignatureType {
     kFeatureSignatureLabel = 0,
-    kFeatureSignatureNumeric = 1,
+    kFeatureSignatureNumeric,
     kFeatureSignatureCategory,
     kFeatureSignatureUnknown = 100
 };
