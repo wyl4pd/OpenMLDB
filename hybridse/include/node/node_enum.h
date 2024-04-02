@@ -195,8 +195,10 @@ enum DataType {
     kPlaceholder = 102
 };
 enum FeatureSignatureType {
-    kFeatureSignatureLabel = 0,
-    kFeatureSignatureNumeric,
+    kFeatureSignatureBinaryLabel = 0,
+    kFeatureSignatureMulticlassLabel,
+    kFeatureSignatureRegressionLabel,
+    kFeatureSignatureNumeric = 10,
     kFeatureSignatureCategory,
     kFeatureSignatureUnknown = 100
 };

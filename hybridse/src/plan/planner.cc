@@ -272,10 +272,27 @@ base::Status Planner::CreateSelectQueryPlan(const node::SelectQueryNode *root, n
     if (feature_signature_list.size()) {
         // Can't support column alias
         CHECK_TRUE(!has_column_alias, common::kPlanError,
-                    "Can't support column alias and feature signature simultaneously");
+                   "Can't support column alias and feature signature simultaneously");
+        // Can't support order clause and feature signature simultaneously
+        CHECK_TRUE(root->order_clause_ptr_ == nullptr, common::kPlanError,
+                   "Can't support order clause and feature signature simultaneously")
         // All columns should apply feature signature
         CHECK_TRUE(feature_signature_list.size() == select_expr_list.size(), common::kPlanError,
                    "Some columns miss feature signatures");
+        size_t label_signature_count = 0;
+        for (node::FeatureSignatureType feature_signature: feature_signature_list) {
+            switch (feature_signature) {
+            case node::kFeatureSignatureBinaryLabel:
+            case node::kFeatureSignatureMulticlassLabel:
+            case node::kFeatureSignatureRegressionLabel:
+                label_signature_count += 1;
+                break;
+            default:
+                break;
+            }
+        }
+        CHECK_TRUE(label_signature_count <= 1, common::kPlanError,
+              "Multiple label signature columns causing ambiguity");
         // // Can't support group clause and feature signature simultaneously
         // CHECK_TRUE(nullptr == root->group_clause_ptr_, common::kPlanError,
         //             "Can't support group clause and feature signature simultaneously")
@@ -363,7 +380,7 @@ base::Status Planner::CreateSelectQueryPlan(const node::SelectQueryNode *root, n
                                                                   pos_mapping);
     // feature signature
     if (feature_signature_list.size()) {
-        current_node = node_manager_->MakeInstanceFormatPlanNode(current_node, "gcformat", feature_signature_list);
+        current_node = node_manager_->MakeInstanceFormatPlanNode(current_node, "GCFormat", feature_signature_list);
     }
     // distinct
     if (root->distinct_opt_) {

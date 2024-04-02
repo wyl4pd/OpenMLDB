@@ -62,8 +62,8 @@ struct Numeric {
     T operator()(T v) { return v; }
 };
 
-template <typename T> struct Hash;
-template <typename T> struct Hash<std::tuple<T>> {
+template <typename T> struct Category;
+template <typename T> struct Category<std::tuple<T>> {
     using Args = std::tuple<T>;
     using ParamType = typename DataTypeTrait<T>::CCallArgType;
 
@@ -72,7 +72,7 @@ template <typename T> struct Hash<std::tuple<T>> {
     }
 };
 
-template <typename T> struct Hash<std::tuple<T, int32_t>> {
+template <typename T> struct Category<std::tuple<T, int32_t>> {
     using Args = std::tuple<T, int32_t>;
     using ParamType = typename DataTypeTrait<T>::CCallArgType;
 
@@ -83,7 +83,7 @@ template <typename T> struct Hash<std::tuple<T, int32_t>> {
     }
 };
 
-template <typename T> struct Hash<std::tuple<T, int64_t>> {
+template <typename T> struct Category<std::tuple<T, int64_t>> {
     using Args = std::tuple<T, int64_t>;
     using ParamType = typename DataTypeTrait<T>::CCallArgType;
 
@@ -94,95 +94,126 @@ template <typename T> struct Hash<std::tuple<T, int64_t>> {
     }
 };
 
-std::optional<std::string> InstanceFormatGetLabel(codec::RowView& row_view, size_t idx) {
-    int i = static_cast<int>(idx);
-    if (i >= 0 && i < row_view.GetSchema()->size()) {
-        switch (row_view.GetSchema()->Get(idx).type()) {
-            case ::hybridse::type::kBool: {
-                bool v = 0;
-                if (row_view.GetBool(idx, &v) == 0) {
-                    return std::to_string(static_cast<int>(v));
-                }
-            }
-            case ::hybridse::type::kInt16: {
-                int16_t v = 0;
-                if (row_view.GetInt16(idx, &v) == 0) {
-                    return std::to_string(v);
-                }
-            }
-            case ::hybridse::type::kInt32: {
-                int32_t v = 0;
-                if (row_view.GetInt32(idx, &v) == 0) {
-                    return std::to_string(v);
-                }
-            }
-            case ::hybridse::type::kInt64: {
-                int64_t v = 0;
-                if (row_view.GetInt64(idx, &v) == 0) {
-                    return std::to_string(v);
-                }
-            }
-            default: {
-                return std::nullopt;
+bool InstanceFormatGetInteger(codec::RowView& row_view, int idx,
+    ::hybridse::type::Type column_type, std::string* ret) {
+    switch (column_type) {
+        case ::hybridse::type::kBool: {
+            bool v = 0;
+            if (row_view.GetBool(idx, &v) == 0) {
+                *ret =  std::to_string(static_cast<int>(v));
+                return true;
             }
         }
-    }
-    return std::nullopt;
-}
-
-std::optional<std::string> InstanceFormatGetNumeric(codec::RowView& row_view, size_t idx) {
-    int i = static_cast<int>(idx);
-    if (i >= 0 && i < row_view.GetSchema()->size()) {
-        switch (row_view.GetSchema()->Get(idx).type()) {
-            case ::hybridse::type::kBool:
-            case ::hybridse::type::kInt16:
-            case ::hybridse::type::kInt32:
-            case ::hybridse::type::kInt64:
-                return InstanceFormatGetLabel(row_view, idx);
-            case ::hybridse::type::kFloat: {
-                float v = 0;
-                if (row_view.GetFloat(idx, &v) == 0) {
-                    return std::to_string(v);
-                }
-            }
-            case ::hybridse::type::kDouble: {
-                double v = 0;
-                if (row_view.GetDouble(idx, &v) == 0) {
-                    return std::to_string(v);
-                }
-            }
-            default: {
-                return std::nullopt;
+        case ::hybridse::type::kInt16: {
+            int16_t v = 0;
+            if (row_view.GetInt16(idx, &v) == 0) {
+                *ret = std::to_string(v);
+                return true;
             }
         }
-    }
-    return std::nullopt;
-}
-
-std::optional<std::string> InstanceFormatGetCategory(codec::RowView& row_view, size_t idx) {
-    int i = static_cast<int>(idx);
-    if (i >= 0 && i < row_view.GetSchema()->size()) {
-        switch (row_view.GetSchema()->Get(idx).type()) {
-            case ::hybridse::type::kInt32: {
-                int32_t v = 0;
-                if (row_view.GetInt32(idx, &v) == 0) {
-                    return std::to_string(static_cast<uint32_t>(v));
-                }
-            }
-            case ::hybridse::type::kInt64: {
-                int64_t v = 0;
-                if (row_view.GetInt64(idx, &v) == 0) {
-                    return std::to_string(static_cast<uint64_t>(v));
-                }
-            }
-            default: {
-                return std::nullopt;
+        case ::hybridse::type::kInt32: {
+            int32_t v = 0;
+            if (row_view.GetInt32(idx, &v) == 0) {
+                *ret = std::to_string(v);
+                return true;
             }
         }
+        case ::hybridse::type::kInt64: {
+            int64_t v = 0;
+            if (row_view.GetInt64(idx, &v) == 0) {
+                *ret = std::to_string(v);
+                return true;
+            }
+        }
+        default: {
+            return false;
+        }
     }
-    return std::nullopt;
+    return false;
 }
 
+bool InstanceFormatGetFloat(codec::RowView& row_view, int idx,
+    ::hybridse::type::Type column_type, std::string* ret) {
+    switch (column_type) {
+        case ::hybridse::type::kFloat: {
+            float v = 0;
+            if (row_view.GetFloat(idx, &v) == 0) {
+                *ret = std::to_string(v);
+                return true;
+            }
+        }
+        case ::hybridse::type::kDouble: {
+            double v = 0;
+            if (row_view.GetDouble(idx, &v) == 0) {
+                *ret = std::to_string(v);
+                return true;
+            }
+        }
+        default: {
+            return false;
+        }
+    }
+    return false;
+}
+
+bool GCFormatGetBinaryLabel(codec::RowView& row_view, int idx,
+    ::hybridse::type::Type column_type, std::string* ret) {
+    if (column_type == ::hybridse::type::kBool) {
+        return InstanceFormatGetInteger(row_view, idx, column_type, ret);
+    }
+    return false;
+}
+
+bool GCFormatGetMulticlassLabel(codec::RowView& row_view, int idx,
+    ::hybridse::type::Type column_type, std::string* ret) {
+    return InstanceFormatGetInteger(row_view, idx, column_type, ret);
+}
+
+bool GCFormatGetRegressionLabel(codec::RowView& row_view, int idx,
+    ::hybridse::type::Type column_type, std::string* ret) {
+    switch (column_type) {
+        case ::hybridse::type::kBool:
+        case ::hybridse::type::kInt16:
+        case ::hybridse::type::kInt32:
+        case ::hybridse::type::kInt64: {
+            return InstanceFormatGetInteger(row_view, idx, column_type, ret);
+        }
+        case ::hybridse::type::kFloat:
+        case ::hybridse::type::kDouble: {
+            return InstanceFormatGetFloat(row_view, idx, column_type, ret);
+        }
+        default: {
+            return false;
+        }
+    }
+    return false;
+}
+
+bool GCFormatGetNumeric(codec::RowView& row_view, int idx,
+    ::hybridse::type::Type column_type, std::string* ret) {
+    switch (column_type) {
+        case ::hybridse::type::kBool:
+        case ::hybridse::type::kInt16:
+        case ::hybridse::type::kInt32:
+        case ::hybridse::type::kInt64: {
+            return InstanceFormatGetInteger(row_view, idx, column_type, ret);
+        }
+        case ::hybridse::type::kFloat:
+        case ::hybridse::type::kDouble: {
+            return InstanceFormatGetFloat(row_view, idx, column_type, ret);
+        }
+        default: {
+            return false;
+        }
+    }
+    return false;
+}
+
+bool GCFormatGetCategory(codec::RowView& row_view, int idx,
+    ::hybridse::type::Type column_type, std::string* ret) {
+    ret->clear();
+    return InstanceFormatGetInteger(row_view, idx, column_type, ret);
+}
 
 codec::Row GCFormat(const codec::Row& row, const vm::InstanceFormatInfo& instance_format) {
     if (row.empty()) {
@@ -198,32 +229,46 @@ codec::Row GCFormat(const codec::Row& row, const vm::InstanceFormatInfo& instanc
     const node::FeatureSignatureList& feature_signature_list = instance_format.feature_signature_list();
     codec::RowView row_view(*instance_format.format_input_schema(), row.buf(), row.size());
     for (size_t idx = 0; idx < feature_signature_list.size(); ++idx) {
-        switch (feature_signature_list[idx]) {
-            case node::kFeatureSignatureLabel: {
-                std::optional<std::string> data_string = InstanceFormatGetLabel(row_view, idx);
-                if (data_string.has_value()) {
-                    instance_label = *data_string + "|";
+        int i = static_cast<int>(idx);
+        if (i >= 0 && i < row_view.GetSchema()->size()) {
+            std::string data_string;
+            ::hybridse::type::Type column_type = row_view.GetSchema()->Get(idx).type();
+            switch (feature_signature_list[idx]) {
+                case node::kFeatureSignatureBinaryLabel: {
+                    if (GCFormatGetBinaryLabel(row_view, i, column_type, &data_string)) {
+                        instance_label = data_string + "|";
+                    }
+                    break;
                 }
-                break;
-            }
-            case node::kFeatureSignatureNumeric: {
-                std::optional<std::string> data_string = InstanceFormatGetNumeric(row_view, idx);
-                if (data_string.has_value()) {
-                    instance_feature += " " + std::to_string(slot_number) + ":0:" + *data_string;
+                case node::kFeatureSignatureMulticlassLabel: {
+                    if (GCFormatGetMulticlassLabel(row_view, i, column_type, &data_string)) {
+                        instance_label = data_string + "|";
+                    }
+                    break;
                 }
-                ++slot_number;
-                break;
-            }
-            case node::kFeatureSignatureCategory: {
-                std::optional<std::string> data_string = InstanceFormatGetCategory(row_view, idx);
-                if (data_string.has_value()) {
-                    instance_feature += " " + std::to_string(slot_number) + ":" + *data_string;
+                case node::kFeatureSignatureRegressionLabel: {
+                    if (GCFormatGetRegressionLabel(row_view, i, column_type, &data_string)) {
+                        instance_label = data_string + "|";
+                    }
+                    break;
                 }
-                ++slot_number;
-                break;
-            }
-            default: {
-                break;
+                case node::kFeatureSignatureNumeric: {
+                    if (GCFormatGetNumeric(row_view, i, column_type, &data_string)) {
+                        instance_feature += " " + std::to_string(slot_number) + ":0:" + data_string;
+                    }
+                    ++slot_number;
+                    break;
+                }
+                case node::kFeatureSignatureCategory: {
+                    if (GCFormatGetCategory(row_view, i, column_type, &data_string)) {
+                        instance_feature += " " + std::to_string(slot_number) + ":" + data_string;
+                    }
+                    ++slot_number;
+                    break;
+                }
+                default: {
+                    break;
+                }
             }
         }
     }
@@ -263,7 +308,7 @@ void DefaultUdfLibrary::InitFeatureSignature() {
         )")
         .args_in<bool, int16_t, int32_t, int64_t, float, double>();
 
-    RegisterExternalTemplate<v1::Hash>("hash")
+    RegisterExternalTemplate<v1::Category>("category")
         .doc(R"(
         )")
         .args_in<std::tuple<bool>, std::tuple<bool, int32_t>, std::tuple<bool, int64_t>,
@@ -277,11 +322,10 @@ void DefaultUdfLibrary::InitFeatureSignature() {
                  std::tuple<Date>, std::tuple<Date, int32_t>, std::tuple<Date, int64_t> >();
 
     RegisterAlias("continuous", "numeric");
-    RegisterAlias("discrete", "hash");
-    RegisterAlias("category", "hash");
-    RegisterFeatureSignature("binary_label", node::kFeatureSignatureLabel);
-    RegisterFeatureSignature("multiclass_label", node::kFeatureSignatureLabel);
-    RegisterFeatureSignature("regression_label", node::kFeatureSignatureLabel);
+    RegisterAlias("discrete", "category");
+    RegisterFeatureSignature("binary_label", node::kFeatureSignatureBinaryLabel);
+    RegisterFeatureSignature("multiclass_label", node::kFeatureSignatureMulticlassLabel);
+    RegisterFeatureSignature("regression_label", node::kFeatureSignatureRegressionLabel);
     RegisterFeatureSignature("numeric", node::kFeatureSignatureNumeric);
     RegisterFeatureSignature("continuous", node::kFeatureSignatureNumeric);
     RegisterFeatureSignature("discrete", node::kFeatureSignatureCategory);

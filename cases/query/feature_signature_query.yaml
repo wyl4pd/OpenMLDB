@@ -78,3 +78,67 @@ cases:
       schema: instance:string
       data: |
         | 1:0:1 3:2681491882390849628
+  - id: 5
+    desc: feature signature select from
+    db: db1
+    sql: |
+      SELECT multiclass_label(col1), numeric(int(col0)), numeric(abs(col1)), category(col6, 1)
+      FROM t1;
+    inputs:
+      - name: t1
+        schema: col0:string, col1:int32, col2:int16, col3:float, col4:double, col5:int64, col6:string
+        index: index2:col2:col5
+        data: |
+          0, 1, 5, 1.1, 11.1, 1, 1
+    expect:
+      schema: instance:string
+      data: |
+        1| 1:0:0 2:0:1 3:0
+  - id: 6
+    desc: feature signature select from
+    mode: request-unsupport
+    db: db1
+    sql: |
+      SELECT multiclass_label(col1), numeric(int(col0)), numeric(abs(col1)), category(col6, 1)
+      FROM t1;
+    inputs:
+      - name: t1
+        schema: col0:string, col1:int32, col2:int16, col3:float, col4:double, col5:int64, col6:string
+        index: index2:col2:col5
+        data: |
+          0, 1, 5, 1.1, 11.1, 1, 1
+          0, 2, 5, 2.2, 22.2, 2, 22
+          1, 3, 55, 3.3, 33.3, 1, 333
+          1, 4, 55, 4.4, 44.4, 2, 4444
+          2, 5, 55, 5.5, 55.5, 3, aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+    expect:
+      schema: instance:string
+      order: instance
+      data: |
+        1| 1:0:0 2:0:1 3:0
+        2| 1:0:0 2:0:2 3:0
+        3| 1:0:1 2:0:3 3:0
+        4| 1:0:1 2:0:4 3:0
+        5| 1:0:2 2:0:5 3:0
+  - id: 7
+    desc: feature signature select from join
+    mode: request-unsupport
+    db: db1
+    sql: |
+      SELECT multiclass_label(t1.col1), numeric(-abs(t1.col1)), category(t2.col6, 1)
+      FROM t1 last join t2 on t1.col1=t2.col1;
+    inputs:
+      - name: t1
+        resource: cases/resource/simple_t1.yaml
+      - name: t2
+        resource: cases/resource/simple_t1.yaml
+    expect:
+      schema: instance:string
+      order: instance
+      data: |
+        1| 1:0:-1 2:0
+        2| 1:0:-2 2:0
+        3| 1:0:-3 2:0
+        4| 1:0:-4 2:0
+        5| 1:0:-5 2:0
+

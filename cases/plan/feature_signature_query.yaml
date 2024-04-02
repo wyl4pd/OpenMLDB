@@ -36,3 +36,15 @@ cases:
           discrete("x", 1),
           numeric(5.5),
           continuous(numeric(true));
+  - id: 2
+    desc: feature signature select from
+    db: db1
+    sql: |
+      SELECT multiclass_label(col1), numeric(int(col0)), numeric(abs(col1)), category(col6, 1)
+      FROM t1;
+  - id: 3
+    desc: feature signature select from limit 
+    db: db1
+    sql: |
+      SELECT multiclass_label(col1), numeric(int(col0)), numeric(abs(col1)), category(col6, 1)
+      FROM t1 limit 3;
