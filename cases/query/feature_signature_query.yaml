@@ -60,10 +60,11 @@ cases:
     sql: |
       select
           category(3, -1),
+          category(3, 0),
     expect:
       schema: instance:string
       data: |
-        | 1:2681491882390849628
+        | 1:2681491882390849628 2:2681491882390849628
   - id: 4
     desc: feature signature null
     db: db1

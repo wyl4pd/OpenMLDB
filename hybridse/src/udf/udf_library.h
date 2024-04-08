@@ -45,7 +45,7 @@ using hybridse::node::ExprNode;
 class ExprUdfRegistryHelper;
 class LlvmUdfRegistryHelper;
 class ExternalFuncRegistryHelper;
-class UdafRegistryHelper;
+class UdafRegistryHelper;  
 class UdfRegistry;
 class UdafRegistry;
 class CompositeRegistry;
